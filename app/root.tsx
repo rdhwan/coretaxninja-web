@@ -7,8 +7,19 @@ import {
   ScrollRestoration,
 } from "react-router";
 
+import {
+  getToast,
+  setToast,
+  unstable_toastMiddleware,
+} from "remix-toast/middleware";
+import { NuqsAdapter } from "nuqs/adapters/react-router/v7";
+
+import { toast as notify } from "sonner";
+
 import type { Route } from "./+types/root";
 import "./app.css";
+import { useEffect } from "react";
+import { Toaster } from "~/components/ui/sonner";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -23,6 +34,18 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
+export function meta({}: Route.MetaArgs) {
+  return [
+    { title: `ENV.S_COMPANY_NAME | NinjaTax` },
+    { name: "description", content: "Welcome to React Router!" },
+  ];
+}
+
+export const loader = ({ request, context }: Route.LoaderArgs) => {
+  const toast = getToast(context as any); // ngomel mulu
+  return { toast };
+};
+
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
@@ -36,13 +59,28 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {children}
         <ScrollRestoration />
         <Scripts />
+        <Toaster />
       </body>
     </html>
   );
 }
 
-export default function App() {
-  return <Outlet />;
+export default function App({ loaderData }: Route.ComponentProps) {
+  const { toast } = loaderData;
+
+  useEffect(() => {
+    if (toast) {
+      notify[toast.type](toast.message);
+    }
+  }, [toast]);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex">
+      <NuqsAdapter>
+        <Outlet />
+      </NuqsAdapter>
+    </div>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
@@ -73,3 +111,5 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
     </main>
   );
 }
+
+export const unstable_middleware = [unstable_toastMiddleware()];
